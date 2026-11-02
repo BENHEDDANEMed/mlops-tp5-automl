@@ -1,3 +1,4 @@
+from pathlib import Path
 import numpy as np
 import pandas as pd
 
@@ -25,5 +26,7 @@ df = pd.DataFrame(
         "fraude": fraude,
     }
 )
+Path('data').mkdir(exist_ok=True)
 df.to_csv("data/transactions.csv", index=False)
 print("data/transactions.csv ecrit :", n, "lignes,", fraude.sum(), "fraudes")
+

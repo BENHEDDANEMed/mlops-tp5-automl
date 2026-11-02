@@ -2,10 +2,12 @@ param([switch]$RegistreSeulement)
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 $python = Join-Path $PSScriptRoot '.venv\Scripts\python.exe'
+$env:PATH = "$(Join-Path $PSScriptRoot '.venv\Scripts');$env:PATH"
 New-Item -ItemType Directory -Force '.runtime' | Out-Null
 $env:MLFLOW_TRACKING_URI = 'http://127.0.0.1:5005'
 $env:MLFLOW_DISABLE_AGENT_HINT = '1'
 $env:PYTHONUNBUFFERED = '1'
+$env:PYTHONIOENCODING = 'utf-8'
 
 function Start-TPService($Name, $Port, $Arguments) {
     if (Get-NetTCPConnection -State Listen -LocalPort $Port -ErrorAction SilentlyContinue) {

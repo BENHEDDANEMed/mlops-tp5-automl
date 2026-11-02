@@ -2,6 +2,7 @@
 import hashlib
 import json
 import os
+import sys
 from importlib.metadata import version
 from pathlib import Path
 
@@ -10,6 +11,9 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 ROOT = Path(__file__).resolve().parents[1]
+for stream in (sys.stdout, sys.stderr):
+    if hasattr(stream, 'reconfigure'):
+        stream.reconfigure(encoding='utf-8', errors='replace')
 os.chdir(ROOT)
 os.environ.setdefault('MLFLOW_DISABLE_AGENT_HINT', '1')
 mlflow.set_tracking_uri(os.getenv('MLFLOW_TRACKING_URI', 'http://127.0.0.1:5005'))
