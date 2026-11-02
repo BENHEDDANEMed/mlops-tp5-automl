@@ -1,2 +1,0 @@
-# Figures de preuves ; le PDF est compile avec pdfLaTeX (MiKTeX ou TeX Live).
-Pillow==13.0.0

@@ -1,19 +1,29 @@
-# TP05 - Creation et deploiement d'un modele AutoML
+# TP05 - Créer et déployer un modèle AutoML
 
-Projet local : `C:\Users\pc\Documents\mlops-workspace\tp5-automl-deploy`.
-Les donnees sont reprises du TP4 (5 000 transactions synthetiques, graine 7).
-Le registre MLflow du TP5 ecoute sur **5005**, car le port 5000 est utilise par le TP4.
-Les predictions utilisent les ports **8100** (AutoML) et **8101** (manuel).
+Comparaison d'un modèle XGBoost sélectionné par FLAML (budget de 90 secondes) et d'un Random Forest manuel (500 arbres, profondeur maximale 16), avec enregistrement dans MLflow, promotion par alias et service HTTP.
+
+## Contenu du dépôt
+
+- `donnees.py` : génération reproductible des 5 000 transactions synthétiques.
+- `src/automl_deploy.py` et `src/modele_manuel.py` : entraînement et enregistrement des modèles.
+- `src/common.py` : données, découpage et configuration partagés.
+- `src/promouvoir.py` : attribution de l'alias `production`.
+- `src/client.py` : prédictions et mesures de latence.
+- `src/verifier.py` : contrôle des signatures et de la cohérence des prédictions.
+- `demarrer.ps1` et `arreter.ps1` : gestion des services locaux.
+- `requirements.txt` et `requirements-lock.txt` : dépendances et versions utilisées.
+- `reports/tp5_comparaison.md` : comparaison et décision de production.
+
+Le rapport PDF, les sources LaTeX, les captures et les résultats bruts restent dans le dossier de travail local. Ils sont exclus du suivi Git, ainsi que les données régénérables, les modèles binaires et les fichiers du serveur MLflow.
 
 ## Reproduire sous PowerShell
 
+Depuis le dossier du projet, avec Python 3.14 :
+
 ```powershell
-Set-Location "$HOME\Documents\mlops-workspace\tp5-automl-deploy"
-# Seulement si .venv n'existe pas :
 python -m venv .venv
 & .\.venv\Scripts\python.exe -m pip install -r requirements-lock.txt
 
-# Registre local, puis entrainements (90 s pour FLAML) :
 .\demarrer.ps1 -RegistreSeulement
 & .\.venv\Scripts\python.exe donnees.py
 & .\.venv\Scripts\python.exe src\automl_deploy.py
@@ -21,7 +31,6 @@ python -m venv .venv
 & .\.venv\Scripts\python.exe src\promouvoir.py fraude-automl
 & .\.venv\Scripts\python.exe src\promouvoir.py fraude-manuel
 
-# Lancer les services de prediction :
 .\demarrer.ps1
 & .\.venv\Scripts\python.exe src\verifier.py
 & .\.venv\Scripts\python.exe src\client.py 8100 --repetition 1
@@ -29,52 +38,22 @@ python -m venv .venv
 & .\.venv\Scripts\python.exe src\client.py 8100 --repetition 2
 & .\.venv\Scripts\python.exe src\client.py 8101 --repetition 2
 
-# Arreter uniquement les processus lances par ce projet :
 .\arreter.ps1
 ```
 
-Pour consulter uniquement les resultats existants : lancer le registre, puis ouvrir
-[MLflow](http://127.0.0.1:5005). Chaque nouvel entrainement cree une nouvelle version.
-L'alias `production` est resolu au demarrage du service ; apres une promotion,
-redemarrer les services pour charger la nouvelle version.
+Le registre est accessible sur [MLflow local](http://127.0.0.1:5005). Le port 5005 permet de conserver le serveur du TP4 sur 5000. Les prédictions utilisent les ports 8100 (AutoML) et 8101 (manuel).
 
-## Livrables
+Chaque nouvel entraînement crée une version dans le registre. L'alias est résolu au chargement : redémarrer les services après une nouvelle promotion. Les scripts de démarrage refusent un port déjà occupé.
 
-- `src/` : entrainement, enregistrement, promotion, client et verification.
-- `reports/tp5_comparaison.md` : mesures et decision de production.
-- `reports/*_resultats.json`, `latence_*.json`, `verification.json` : preuves brutes.
-- `reports/artefacts/` : MLmodel et dependances des deux modeles.
-- Rapport PDF identifie avec les informations du rapport TP4.
-- `requirements-lock.txt` : versions exactes de l'environnement utilise.
+## Résultats
 
-Les temps humains ne sont pas chronometres : le rapport les indique comme inconnus.
-Les copies `models/*.pkl` servent seulement a comparer les tailles ; le modele manuel
-est enregistre au format **skops** dans MLflow, l'AutoML au format **cloudpickle**.
-Charger uniquement des artefacts provenant de ce projet de confiance.
+| Critère | Manuel | AutoML |
+|---|---:|---:|
+| F1 sur le jeu de test | 0,8669 | 0,8561 |
+| Médiane HTTP, essai 1 | 92,13 ms | 31,21 ms |
+| Médiane HTTP, essai 2 | 118,10 ms | 30,34 ms |
+| Taille de la copie joblib | 13,374 Mio | 0,279 Mio |
 
-Le parcours cloud facultatif n'a pas ete execute. Aucune ressource cloud n'a ete creee.
-Le depot Git est local ; aucune publication GitHub ni aucun e-mail n'a ete effectue.
-Apres validation du rendu, creer un depot public vide `mlops-tp5-automl`, puis :
+Le [tableau complet](reports/tp5_comparaison.md) précise les p95, les durées et les limites du protocole. Les temps humains n'ont pas été mesurés. Le parcours cloud facultatif n'a pas été exécuté.
 
-```powershell
-git remote add origin https://github.com/VOTRE_COMPTE/mlops-tp5-automl.git
-git push -u origin main
-```
-
-Le compte rendu doit ensuite etre accompagne de l'URL reelle du depot.
-
-## Regenerer les figures et le rapport LaTeX
-
-Installer MiKTeX ou TeX Live pour disposer de pdfLaTeX. La mise en page reprend le rapport TP04 : logos, page de garde, police Latin Modern, sommaire, tableaux et legendes.
-Les sources autonomes se trouvent dans `rapport-latex/` et dans `BENHEDDANE_Mohamed_5IASD_G8_sources_LaTeX.zip` ; elles peuvent etre importees dans Overleaf.
-
-```powershell
-& .\.venv\Scripts\python.exe -m pip install -r requirements-rapport.txt
-& .\.venv\Scripts\python.exe src\rapport_mesures.py
-& .\.venv\Scripts\python.exe rendre_preuves.py
-& .\.venv\Scripts\python.exe creer_rapport.py
-```
-
-Les captures du run, des parametres, de MLmodel et des dependances proviennent
-de l'interface MLflow. Les figures des services et du client sont des transcriptions
-des journaux et des mesures, explicitement identifiees dans le PDF.
+Le modèle manuel est enregistré en `skops` dans MLflow et le modèle AutoML en `cloudpickle`. Les copies joblib servent à comparer les tailles. Charger uniquement les modèles provenant d'une source de confiance.

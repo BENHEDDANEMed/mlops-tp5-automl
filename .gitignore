@@ -1,3 +1,4 @@
+# Environnement, caches et execution locale
 .venv/
 __pycache__/
 *.pyc
@@ -8,3 +9,17 @@ mlartifacts/
 mlruns/
 .runtime/
 tmp/
+
+# Rapport et outils de preparation : conserves localement
+/*.pdf
+/*.zip
+/rapport-latex/
+/creer_rapport.py
+/rendre_preuves.py
+/requirements-rapport.txt
+/src/exporter_preuves.py
+/src/rapport_mesures.py
+
+# Ne publier que la comparaison demandee dans reports/
+/reports/*
+!/reports/tp5_comparaison.md
