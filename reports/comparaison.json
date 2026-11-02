@@ -1,0 +1,61 @@
+{
+  "rows": [
+    [
+      "Famille de modele",
+      "foret aleatoire (500 arbres, profondeur 16)",
+      "XGBClassifier"
+    ],
+    [
+      "F1 sur le jeu de test",
+      "0.8669",
+      "0.8561"
+    ],
+    [
+      "Precision / rappel",
+      "0.8837 / 0.8507",
+      "0.8692 / 0.8433"
+    ],
+    [
+      "Temps machine (s)",
+      "2.86 (entrainement seul)",
+      "90.00 (recherche et reentrainement)"
+    ],
+    [
+      "Temps humain",
+      "non mesure au TP2, a renseigner par le groupe",
+      "non mesure : mise en place et analyse a inclure"
+    ],
+    [
+      "Latence mediane (ms), essais 1 / 2",
+      "92.13 / 118.10",
+      "31.21 / 30.34"
+    ],
+    [
+      "Latence p95 (ms), essais 1 / 2",
+      "150.68 / 300.82",
+      "41.16 / 38.72"
+    ],
+    [
+      "Taille du fichier (Mio)",
+      "13.374",
+      "0.279"
+    ],
+    [
+      "Explicabilite",
+      "importance des variables, 500 arbres, profondeur max. 16",
+      "importance des variables, arbres et profondeur selon famille ; SHAP possible"
+    ],
+    [
+      "Format dans MLflow",
+      "skops",
+      "cloudpickle"
+    ]
+  ],
+  "decision": [
+    "Je retiens le modele AutoML pour le compromis qualite, latence et taille observe dans ce TP.",
+    "Le F1 AutoML est 0.8561 contre 0.8669 ; il manque 21 fraudes contre 20 pour le manuel.",
+    "Ses medianes sont 31.21/30.34 ms contre 92.13/118.10 ms, et il est 47.9 fois plus compact.",
+    "Les deux modeles exposent des importances de variables ; je conserve le manuel comme reference et solution de retour arriere.",
+    "Ce choix pedagogique doit etre confirme avec un cout metier des faux negatifs, d'autres partitions et un objectif de latence explicite."
+  ]
+}

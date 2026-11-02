@@ -1,0 +1,39 @@
+{
+  "family": "xgboost",
+  "class": "XGBClassifier",
+  "f1": 0.8560606060606061,
+  "f1_flaml": 0.8560606060606061,
+  "predictions_identical": true,
+  "precision": 0.8692307692307693,
+  "recall": 0.8432835820895522,
+  "confusion_matrix": [
+    [
+      1099,
+      17
+    ],
+    [
+      21,
+      113
+    ]
+  ],
+  "duration_s": 90.00419389992021,
+  "config": {
+    "n_estimators": 322,
+    "max_leaves": 4,
+    "min_child_weight": 0.09864210411697902,
+    "learning_rate": 0.13646549188064439,
+    "subsample": 0.6098630575723134,
+    "colsample_bylevel": 0.6169235985334447,
+    "colsample_bytree": 1.0,
+    "reg_alpha": 0.02674659679209743,
+    "reg_lambda": 1.0792434011613856
+  },
+  "run_id": "6f7f9441bde44326bae1aa580bfb2558",
+  "model_uri": "models:/m-7a3c598f6cef432b9a44209c21cabcad",
+  "version": "2",
+  "size_bytes": 292705,
+  "data_sha256": "cf81ca30a17e6db0dc69bbe89d2b7f97710dd0dba3feaad1b35daacb16deb997",
+  "train_rows": 3750,
+  "test_rows": 1250,
+  "test_frauds": 134
+}

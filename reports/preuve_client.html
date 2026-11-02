@@ -1,0 +1,10 @@
+<!doctype html><meta charset="utf-8"><title>Capture 3 - Predictions, latences et signature</title><style>body{background:#eef3f8;color:#183047;font:16px Segoe UI,sans-serif;margin:32px;max-width:1240px}h1{font-size:30px}h2{color:#107c69;font-size:22px}pre{background:#112335;color:#edf5ff;padding:18px;border-radius:10px;white-space:pre-wrap;overflow-wrap:anywhere;font:14px Consolas,monospace}small{color:#526777}.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.ok{color:#107c69}</style><h1>Capture 3 - Predictions, latences et signature</h1><p>Transcription des sorties mesurees ; 10 appels d echauffement avant chaque serie.</p><h2>Client - port 8100</h2><pre>reponse : 200 {"predictions": [1]}
+Essai 1 | mediane : 31.21 ms | p95 : 41.16 ms | 200 appels OK
+Essai 2 | mediane : 30.34 ms | p95 : 38.72 ms | 200 appels OK</pre><h2>Client - port 8101</h2><pre>reponse : 200 {"predictions": [1]}
+Essai 1 | mediane : 92.13 ms | p95 : 150.68 ms | 200 appels OK
+Essai 2 | mediane : 118.10 ms | p95 : 300.82 ms | 200 appels OK</pre><h2>Requete invalide : HTTP 400</h2><pre>{
+  &quot;error_code&quot;: &quot;INVALID_PARAMETER_VALUE&quot;,
+  &quot;message&quot;: &quot;Failed to predict data &#x27;   montant\n0   8500.0&#x27;. \nError: Failed to enforce schema of data &#x27;   montant\n0   8500.0&#x27; with schema &#x27;[&#x27;montant&#x27;: double (required), &#x27;anciennete&#x27;: long (required), &#x27;freq_24h&#x27;: long (required), &#x27;nuit&#x27;: long (required)]&#x27;. Error: Model is missing inputs [&#x27;anciennete&#x27;, &#x27;freq_24h&#x27;, &#x27;nuit&#x27;].&quot;,
+  &quot;sqlstate&quot;: &quot;KAM01&quot;,
+  &quot;error_class&quot;: &quot;SCHEMA_ENFORCEMENT_FAILED&quot;
+}</pre>
