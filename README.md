@@ -63,7 +63,10 @@ git push -u origin main
 
 Le compte rendu doit ensuite etre accompagne de l'URL reelle du depot.
 
-## Regenerer les figures et le rapport
+## Regenerer les figures et le rapport LaTeX
+
+Installer MiKTeX ou TeX Live pour disposer de pdfLaTeX. La mise en page reprend le rapport TP04 : logos, page de garde, police Latin Modern, sommaire, tableaux et legendes.
+Les sources autonomes se trouvent dans `rapport-latex/` et dans `BENHEDDANE_Mohamed_5IASD_G8_sources_LaTeX.zip` ; elles peuvent etre importees dans Overleaf.
 
 ```powershell
 & .\.venv\Scripts\python.exe -m pip install -r requirements-rapport.txt

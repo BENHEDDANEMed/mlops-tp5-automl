@@ -1,0 +1,6 @@
+Sources du rapport TP05. Mise en page reprise du rapport TP04 du groupe.
+
+Compiler rapport.tex avec pdfLaTeX (deux passages) ; conserver le dossier captures/ a cote du fichier.
+Le projet peut etre importe dans Overleaf avec rapport.tex comme document principal.
+
+Les figures des services et du client sont des transcriptions des journaux reels, explicitement identifiees.

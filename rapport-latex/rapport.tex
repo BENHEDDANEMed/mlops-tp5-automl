@@ -1,0 +1,255 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{lmodern}
+\usepackage{amsmath}
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta}
+\usepackage{pdflscape}
+\usepackage{array}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=blue!50!black, urlcolor=blue!60!black}
+
+\graphicspath{{captures/}}
+
+\definecolor{bleu}{RGB}{31,78,121}
+\definecolor{vert}{RGB}{38,150,120}
+\lstset{basicstyle=\ttfamily\footnotesize, breaklines=true, frame=single,
+        backgroundcolor=\color{gray!8}, columns=fullflexible}
+
+\newcommand{\capture}[3]{% #1 = fichier, #2 = largeur, #3 = legende
+  \begin{figure}[H]
+    \centering
+    \includegraphics[width=#2\linewidth]{#1}
+    \caption[#3]{#3\\ \small Fichier : \texttt{captures/\detokenize{#1}}}
+  \end{figure}}
+
+
+\setlength{\emergencystretch}{2em}
+\hypersetup{pdftitle={Compte rendu de TP05 AutoML et deploiement}, pdfauthor={Mohamed BENHEDDANE, Yassir DRISSI, Zineb BAQLOUL}}
+
+\begin{document}
+\hypersetup{pageanchor=false}
+
+
+% ================= PAGE DE GARDE =================
+\newcommand{\logo}[2]{\IfFileExists{#1}{\includegraphics[height=#2]{#1}}{\fbox{\parbox[c][#2][c]{3cm}{\centering\footnotesize #1}}}}
+
+\begin{titlepage}
+  \centering
+  \logo{captures/emsi.png}{2.2cm}\hfill\logo{captures/Honoris.png}{1.2cm}\par
+  \vspace{1.5cm}
+  {\small École Marocaine des Sciences de l'Ingénieur (EMSI) -- Rabat\par}
+  \vspace{0.2cm}
+  {\small\bfseries Filière Intelligence Artificielle \& Data Science (5IASD)\par}
+  \vspace{1.6cm}
+  {\color{vert}\rule{\linewidth}{1pt}\par}
+  \vspace{0.6cm}
+  {\huge\bfseries Compte rendu de TP05\par}
+  \vspace{0.4cm}
+  {\Large AutoML : création et déploiement\\[0.15cm] d'un modèle pour la détection de fraude\par}
+  \vspace{0.6cm}
+  {\color{vert}\rule{\linewidth}{1pt}\par}
+  \vspace{2cm}
+  {Module : DÉPLOIEMENT D'APPLICATIONS INTELLIGENTES\par}
+  \vspace{2cm}
+  \begin{tabular}{r@{\hspace{0.4cm}}l}
+    \textbf{Réalisé par :} & \textbf{Mohamed BENHEDDANE} \\[0.12cm]
+                           & \textbf{Yassir DRISSI} \\[0.12cm]
+                           & \textbf{Zineb BAQLOUL} \\[0.12cm]
+    \textbf{Filière :}     & 5IASD \\[0.12cm]
+    \textbf{Groupe :}      & G8 \\[0.12cm]
+    \textbf{Encadrant :}   & Pr. H. Naciri \\[0.12cm]
+  \end{tabular}\par
+  \vfill
+  {\large 2 novembre 2026\par}
+\end{titlepage}
+
+
+\hypersetup{pageanchor=true}
+\newpage
+\tableofcontents
+\newpage
+\section{Introduction et protocole expérimental}
+Le TP05 prolonge la recherche AutoML du TP04 par une chaîne de mise en service complète : entraînement, packaging, enregistrement dans MLflow, promotion par alias, service HTTP et consommation par un client externe. Nous comparons le gagnant de FLAML à la forêt aléatoire manuelle du TP2 sur quatre axes : qualité, latence, taille et explicabilité.
+
+Le modèle manuel obtient le meilleur F1 de test, soit 0,8669 contre 0,8561 pour AutoML. XGBoost, retenu par FLAML, est cependant 47,9 fois plus compact et présente une latence médiane de 30 à 31 ms, contre 92 à 118 ms pour le manuel. La décision de production doit donc intégrer ce compromis.
+
+\subsection*{Données et comparaison équitable}
+Le script \texttt{donnees.py}, repris du TP04, génère 5\,000 transactions synthétiques avec une graine fixée à 7 ; 568 transactions sont frauduleuses. Les variables sont \texttt{montant}, \texttt{anciennete}, \texttt{freq\_24h} et \texttt{nuit} ; la cible est \texttt{fraude}.
+
+Les deux scripts utilisent \texttt{train\_test\_split} avec \texttt{test\_size=0.25} et \texttt{random\_state=42}, sans stratification, comme le sujet. La partition comporte 3\,750 observations d'entraînement et 1\,250 de test, dont 134 fraudes. FLAML sélectionne ses réglages sur sa validation interne ; le test externe ne sert pas à régler les hyperparamètres.
+
+\begin{table}[H]\centering
+\small\renewcommand{\arraystretch}{1.25}
+\begin{tabularx}{\linewidth}{X c c c}
+\toprule
+\textbf{Approche} & \textbf{Durée machine} & \textbf{F1 test} & \textbf{Format MLflow} \\
+\midrule
+Manuel : Random Forest 500/16 & 2,86 s & 0,8669 & skops \\
+AutoML : XGBoost, budget 90 s & 90,00 s & 0,8561 & cloudpickle \\
+\bottomrule
+\end{tabularx}
+\caption{Résultats de la série d'exécutions du TP05.}
+\end{table}
+
+\subsection*{Environnement et traçabilité}
+Les exécutions utilisent Windows, Python 3.14.7, FLAML 2.7.0, MLflow 3.17.2, scikit-learn 1.9.1, XGBoost 2.1.4, pandas 3.1.0 et NumPy 2.5.4. FLAML fonctionne directement : le plan B n'a pas été utilisé. La recherche est limitée à deux fils de calcul et à un budget de 90 secondes.
+
+Le projet est enregistré dans \path{C:/Users/pc/Documents/mlops-workspace/tp5-automl-deploy}. Le registre du TP05 écoute sur le port \textbf{5005}, car le port 5000 est utilisé par le TP04. Les services de prédiction utilisent les ports \textbf{8100} et \textbf{8101}, conformément au sujet. Le parcours cloud facultatif n'a pas été exécuté.
+
+\clearpage
+\section{Réalisation et résultats}
+\subsection{Recherche AutoML et extraction du gagnant}
+Le script \texttt{src/automl\_deploy.py} lance FLAML pendant 90 secondes avec \texttt{metric='f1'} et \texttt{seed=42}. Le gagnant est un \texttt{XGBClassifier} comportant 322 arbres et au plus quatre feuilles par arbre. Son F1 de test vaut 0,8561. L'estimateur extrait avec \texttt{automl.model.estimator} produit exactement les mêmes prédictions que l'objet FLAML sur les 1\,250 lignes du test.
+
+\capture{capture1_run.jpg}{0.96}{Capture 1a : run automl-90s, métrique F1 et durée de recherche dans MLflow.}
+\capture{capture1_parametres.jpg}{0.88}{Capture 1b : famille xgboost et hyperparamètres gagnants.}
+
+\clearpage
+\subsection{Packaging et enregistrement dans le registre}
+Le gagnant est enregistré sous \texttt{fraude-automl}, version 2. Une première version avait été enregistrée avant la correction de l'encodage des sorties Windows ; la série retenue dans ce rapport correspond à la seconde exécution. Le modèle manuel est enregistré sous \texttt{fraude-manuel}, version 1.
+
+\capture{capture1_mlmodel.jpg}{0.96}{Capture 1c : fichier MLmodel du gagnant, flavors et sérialisation cloudpickle.}
+\capture{capture1_dependances.jpg}{0.75}{Dépendances enregistrées : XGBoost 2.1.4 figure dans requirements.txt.}
+
+Les flavors \texttt{sklearn} et \texttt{python\_function} permettent le chargement natif et le service HTTP. La signature impose \texttt{montant} en double et les trois autres variables en entiers longs. Le Random Forest utilise explicitement \texttt{serialization\_format='skops'} et le type autorisé \texttt{sklearn.tree.\_tree.Tree}.
+
+\clearpage
+\subsection{Promotion et démarrage des deux services}
+Le script \texttt{src/promouvoir.py} sélectionne la version la plus récente de chaque modèle, vérifie son état \texttt{READY}, puis lui attribue l'alias \texttt{production}. Les services utilisent cet alias et n'ont pas besoin d'un numéro de version codé en dur.
+
+\begin{lstlisting}
+mlflow models serve -m "models:/fraude-automl@production" -h 127.0.0.1 -p 8100 --env-manager local
+mlflow models serve -m "models:/fraude-manuel@production" -h 127.0.0.1 -p 8101 --env-manager local
+\end{lstlisting}
+
+\capture{capture2_services.jpg}{0.98}{Preuve 2 : démarrage des deux services et vérification des points de terminaison.}
+{\small\itshape Cette figure est une transcription des journaux réels d'exécution et des contrôles HTTP ; elle ne représente pas des fenêtres de terminaux. Les sorties originales sont conservées dans \texttt{.runtime/automl.err.log} et \texttt{.runtime/manuel.err.log}.\par}
+
+Le script \texttt{src/verifier.py} confirme les réponses HTTP 200 de \texttt{/health}. Le rechargement depuis les deux alias reproduit toutes les prédictions du test local. Pour chaque service, un lot de 30 transactions envoyé par HTTP donne également les mêmes prédictions que le modèle local.
+
+Un alias est résolu au démarrage : modifier \texttt{production} ne remplace pas le modèle déjà chargé en mémoire. Après promotion ou retour à une ancienne version, les services doivent être redémarrés.
+
+\clearpage
+\subsection{Consommation HTTP et validation de la signature}
+Le client envoie une transaction suspecte : \texttt{montant=8500.0}, \texttt{anciennete=3}, \texttt{freq\_24h=9}, \texttt{nuit=1}. Les deux services répondent HTTP 200 et \texttt{predictions=[1]}.
+
+Chaque série comprend dix appels d'échauffement non mesurés, puis 200 appels chronométrés avec \texttt{perf\_counter}. Le client vérifie les réponses ; deux séries sont exécutées par service, soit 800 appels mesurés au total. Le p95 utilise \texttt{statistics.quantiles(n=20)}, comme dans le sujet.
+
+\capture{capture3_client.jpg}{0.98}{Preuve 3 : sorties du client, deux répétitions par service et réponse à la requête invalide.}
+{\small\itshape Transcription des résultats JSON mesurés et de la réponse HTTP réelle ; aucune latence n'est simulée.\par}
+
+La requête contenant seulement \texttt{montant} est rejetée avec le statut \textbf{400}. Le message indique les colonnes manquantes : \texttt{anciennete}, \texttt{freq\_24h} et \texttt{nuit}. La signature protège la forme de l'entrée ; elle ne garantit pas la validité métier de la transaction.
+
+Les latences incluent la connexion locale, la sérialisation JSON, la validation du schéma et l'inférence. Les appels sont séquentiels, sans session persistante ni charge concurrente générée par le client. Le temps du modèle seul n'est donc pas isolé. La variabilité entre les deux séries du manuel rappelle la sensibilité des mesures à l'état du poste.
+
+\clearpage
+\section{Comparaison et décision de production}
+Les valeurs ci-dessous proviennent de \texttt{reports/tp5\_comparaison.md}. Les tailles sont mesurées sur les copies locales \texttt{joblib}, pour comparer le même format, et non sur l'archive skops du registre. Un Mio correspond à 1\,048\,576 octets.
+
+\begin{table}[H]\centering
+\small\renewcommand{\arraystretch}{1.32}
+\begin{tabularx}{\linewidth}{p{4.0cm} X X}
+\toprule
+\textbf{Critère} & \textbf{Manuel (RF 500/16)} & \textbf{AutoML (FLAML 90 s)} \\
+\midrule
+Famille & Forêt aléatoire & XGBoost \\
+F1 sur le test & 0,8669 & 0,8561 \\
+Précision / rappel & 0,8837 / 0,8507 & 0,8692 / 0,8433 \\
+Temps machine & 2,86 s (entraînement final) & 90,00 s (recherche et réentraînement) \\
+Temps humain & Non mesuré au TP2 ; à compléter & Non mesuré ; préparation et analyse à inclure \\
+Médiane, essai 1 & 92,13 ms & 31,21 ms \\
+Médiane, essai 2 & 118,10 ms & 30,34 ms \\
+p95, essai 1 & 150,68 ms & 41,16 ms \\
+p95, essai 2 & 300,82 ms & 38,72 ms \\
+Taille du fichier & 13,374 Mio & 0,279 Mio \\
+Explicabilité & Importances ; 500 arbres, profondeur maximale 16 & Importances ; 322 arbres, au plus 4 feuilles par arbre ; SHAP envisageable \\
+Format du registre & skops & cloudpickle \\
+\bottomrule
+\end{tabularx}
+\caption{Comparaison sur les mêmes données et les deux séries de mesures HTTP.}
+\end{table}
+
+\subsection*{Décision en cinq lignes}
+\noindent Nous retenons AutoML pour son compromis entre qualité, latence et taille.\\
+Le F1 vaut 0,8561 contre 0,8669 ; 21 fraudes sont manquées, contre 20.\\
+Ses médianes de 30 à 31 ms et sa taille 47,9 fois plus faible sont des atouts.\\
+Les importances sont accessibles ; le manuel est conservé pour un retour arrière.\\
+Ce choix exige une validation métier des erreurs et un objectif de latence.
+
+\subsection*{Lecture des erreurs}
+Le manuel produit 1\,101 vrais négatifs, 15 faux positifs, 20 faux négatifs et 114 vrais positifs. AutoML produit respectivement 1\,099, 17, 21 et 113. Sur ce test, l'écart correspond à une fraude supplémentaire manquée et deux fausses alertes supplémentaires pour AutoML. Il doit être confirmé sur d'autres partitions ou sur des données temporelles représentatives ; un seul découpage ne démontre pas une différence généralisable.
+
+\clearpage
+\section{Réponses aux questions d'évaluation}
+\subsection*{Question 1 : le choix de production}
+\addcontentsline{toc}{subsection}{Question 1 : le choix de production}
+Nous déploierions XGBoost issu de FLAML pour ce TP. Il est 47,9 fois plus compact, environ trois à quatre fois plus rapide en médiane dans nos séries, et son p95 reste inférieur à celui du manuel. Ces résultats compensent, dans notre choix pédagogique, une baisse de F1 de 0,0109. Le modèle manuel reste préférable si le coût d'une fraude manquée domine les contraintes de rapidité et de stockage.
+
+Les autres critères sont la mémoire, le coût d'exploitation, le rappel des fraudes, la facilité de maintenance, la traçabilité et l'explicabilité. Les importances globales sont accessibles pour les deux ensembles d'arbres ; une analyse locale avec SHAP peut compléter l'étude. Une importance ne démontre pas une relation causale. Avant un usage réel, il faudrait fixer le coût des erreurs et valider la qualité sur une période indépendante.
+
+\subsection*{Question 2 : le coût d'un point de terminaison cloud}
+\addcontentsline{toc}{subsection}{Question 2 : le coût d'un point de terminaison cloud}
+La page officielle de tarification a été consultée le \textbf{2 novembre 2026} [1]. Hypothèse illustrative : une machine \texttt{n1-standard-2}, dans \texttt{us-central1}, à la demande, sans remise et avec un modèle déployé en continu. Le tarif de prédiction consulté vaut \textbf{0,1095 USD par heure}. Pour 30 jours :
+\[
+ C = 30 \times 24 \times 0{,}1095 = \boxed{78{,}84\ \text{USD}}.
+\]
+Une base de 730 heures donne 79,94 USD. Une machine active reste facturée sans requêtes. Le calcul exclut entraînement, stockage, réseau, taxes et explications supplémentaires ; il ne constitue pas un devis pour \texttt{europe-west1}. La page indique que l'inférence AutoML tabulaire suit les tarifs de prédiction des modèles personnalisés. Aucune ressource cloud payante n'a été créée pour le TP.
+
+\subsection*{Question 3 : latence locale et latence cloud}
+\addcontentsline{toc}{subsection}{Question 3 : latence locale et latence cloud}
+Les médianes AutoML locales valent 31,21 et 30,34 ms ; celles du manuel, 92,13 et 118,10 ms. Le cloud ajoute généralement le trajet réseau jusqu'à la région, TLS, l'authentification, le routage et des files d'attente éventuelles. Ces éléments augmentent le temps aller-retour, même si l'inférence elle-même reste rapide.
+
+Une machine distante plus puissante peut réduire le calcul du modèle. La latence cloud n'est donc pas une constante que l'on peut ajouter aux mesures locales. Il faut comparer un client, une région, une charge et une taille de lot fixés. Aucun endpoint cloud n'ayant été testé ici, nous ne présentons pas de latence cloud mesurée.
+
+\clearpage
+\subsection*{Question 4 : le moteur change de version}
+\addcontentsline{toc}{subsection}{Question 4 : le moteur change de version}
+Un nouvel entraînement peut explorer d'autres familles, retenir de nouveaux hyperparamètres et produire des scores différents, même avec les mêmes données. L'évolution du runtime peut aussi modifier le chargement ou le comportement d'un modèle servi. Le risque est une régression de qualité, une incompatibilité de dépendances ou une perte de reproductibilité.
+
+Il faut conserver les versions du moteur et des bibliothèques, les données et leur empreinte, la configuration gagnante, la signature, le modèle et les résultats d'évaluation. La mise à jour doit être testée avant promotion. Le registre et les anciennes versions permettent de préparer un retour arrière ; il faut également conserver leur environnement d'exécution.
+
+\subsection*{Question 5 : réversibilité}
+\addcontentsline{toc}{subsection}{Question 5 : réversibilité}
+Il faut vérifier dès le choix de la plateforme les formats d'export et le droit d'exécuter le modèle hors du fournisseur. Lorsque l'export est possible, nous conserverions le modèle, le prétraitement, le schéma d'entrée, les dépendances et un jeu de référence, puis nous testerions l'inférence hors plateforme pour vérifier l'équivalence.
+
+Un format interopérable tel qu'ONNX peut être envisagé si le modèle est compatible. Si l'export n'est pas possible, les données, les labels et un pipeline indépendant doivent permettre de réentraîner une solution de remplacement. Une simple API de prédiction ne garantit pas la réversibilité. Dans ce TP, les contrôles de rechargement depuis MLflow constituent une première vérification locale.
+
+\subsection*{Question 6 : skops ou cloudpickle}
+\addcontentsline{toc}{subsection}{Question 6 : skops ou cloudpickle}
+Le gagnant de FLAML peut provenir de LightGBM, XGBoost ou scikit-learn. Dans ce TP, \texttt{cloudpickle} simplifie le packaging de l'estimateur via le flavor sklearn. La référence manuelle, connue à l'avance, est enregistrée explicitement en \texttt{skops}, avec le type \texttt{sklearn.tree.\_tree.Tree} autorisé. Le format et les dépendances sont conservés dans \texttt{MLmodel} et \texttt{requirements.txt} [2].
+
+Les formats pickle et cloudpickle peuvent exécuter du code lors de la désérialisation. Leur chargement doit être limité à des artefacts de confiance. Cet usage reste acceptable ici dans un cadre local contrôlé : nous entraînons nous-mêmes le modèle et conservons son artefact dans notre registre. Skops permet de contrôler les types chargés ; élargir la liste de confiance sans examen réduit cette protection [3]. Aucun de ces formats ne dispense de conserver des versions compatibles des bibliothèques.
+
+\clearpage
+\section{Conclusion et références}
+Le TP05 met en service deux modèles à travers le même registre et le même protocole HTTP. L'extraction du gagnant FLAML conserve exactement les prédictions de l'objet AutoML. Les alias \texttt{production}, les signatures et les vérifications automatisées assurent la cohérence entre entraînement, enregistrement et consommation.
+
+La référence manuelle obtient le meilleur F1, mais XGBoost offre une taille plus faible et des latences nettement meilleures dans cette expérience. Nous retenons donc AutoML comme compromis pédagogique, en conservant le manuel comme solution de référence. La validation des coûts des faux négatifs, de la dérive et des objectifs de service resterait indispensable avant une production réelle.
+
+\subsection*{Livrables et état du projet}
+Le dossier \texttt{src/} contient l'entraînement, la promotion, le client et les contrôles. Les fichiers \texttt{reports/*\_resultats.json}, \texttt{latence\_*.json} et \texttt{verification.json} conservent les résultats bruts. Le tableau est disponible dans \texttt{reports/tp5\_comparaison.md}. Les métadonnées et les dépendances des modèles sont copiées dans \texttt{reports/artefacts/}.
+
+Le dépôt Git local comprend les étapes du TP. Les données régénérables, les modèles binaires, le registre SQLite, les artefacts MLflow et l'environnement virtuel sont exclus du suivi. Les services locaux du TP05 ont été arrêtés après les mesures. Les temps humains ne sont pas inventés et restent à compléter par le groupe. La publication GitHub et l'envoi du rapport n'ont pas été effectués.
+
+\subsection*{Sources documentaires}
+Les références suivantes ont été consultées le 2 novembre 2026. Le chiffrage cloud est une estimation sous hypothèses ; aucune performance cloud n'a été mesurée.
+
+{\footnotesize\noindent [1] Google Cloud : tarification Vertex AI / page actuelle de la plateforme ; rubriques \emph{Tabular data} et \emph{Prediction and explanation}, région \texttt{us-central1}.\\
+\url{https://cloud.google.com/products/gemini-enterprise-agent-platform/pricing}\par}\medskip
+{\footnotesize\noindent [2] MLflow : API \texttt{mlflow.sklearn}, formats de sérialisation et \texttt{skops\_trusted\_types}.\\
+\url{https://mlflow.org/docs/latest/api_reference/python_api/mlflow.sklearn.html}\par}\medskip
+{\footnotesize\noindent [3] scikit-learn : \emph{Model persistence}, sécurité et limites de compatibilité.\\
+\url{https://scikit-learn.org/stable/model_persistence.html}\par}
+
+\end{document}
